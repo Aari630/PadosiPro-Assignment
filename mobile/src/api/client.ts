@@ -2,9 +2,12 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
-// Use physical IP if provided via .env, otherwise fallback to emulators
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 
-  (Platform.OS === 'android' ? 'http://10.0.2.2:4000/api' : 'http://localhost:4000/api');
+const configuredApiUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
+const BASE_URL = configuredApiUrl || (
+  Platform.OS === 'android'
+    ? 'http://10.0.2.2:4000/api'
+    : 'http://localhost:4000/api'
+);
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,

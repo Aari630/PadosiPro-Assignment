@@ -13,7 +13,7 @@ export const getProfile = async (req: AuthenticatedRequest, res: Response): Prom
       hasProfile: Boolean(profile),
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to retrieve profile', error });
+    res.status(500).json({ success: false, message: 'Failed to retrieve profile' });
   }
 };
 
@@ -50,6 +50,6 @@ export const upsertProfile = async (req: AuthenticatedRequest, res: Response): P
       profile,
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to save profile', error });
+    res.status(500).json({ success: false, message: 'Failed to save profile' });
   }
 };

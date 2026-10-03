@@ -19,7 +19,7 @@ export const getCatalog = async (_req: AuthenticatedRequest, res: Response): Pro
 
     res.status(200).json({ success: true, categories });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to fetch task catalogue', error });
+    res.status(500).json({ success: false, message: 'Failed to fetch task catalogue' });
   }
 };
 
@@ -58,7 +58,7 @@ export const selectTasks = async (req: AuthenticatedRequest, res: Response): Pro
       tasks: selectedTasks.map((st) => st.task),
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to update selected tasks', error });
+    res.status(500).json({ success: false, message: 'Failed to update selected tasks' });
   }
 };
 
@@ -80,6 +80,6 @@ export const getSelectedTasks = async (req: AuthenticatedRequest, res: Response)
       tasks: selected.map((s) => s.task),
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to fetch user tasks', error });
+    res.status(500).json({ success: false, message: 'Failed to fetch user tasks' });
   }
 };

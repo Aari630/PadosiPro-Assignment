@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import * as SecureStore from 'expo-secure-store';
+import axios from 'axios';
 import { apiClient } from '../api/client';
 
 interface User {
@@ -41,13 +42,21 @@ export const useAuthStore = create<AuthState>((set) => ({
       const userData = await SecureStore.getItemAsync('userData');
       
       if (token && userData) {
+        const storedUser = JSON.parse(userData) as User;
+
         try {
           await apiClient.get('/profile', { headers: { Authorization: `Bearer ${token}` } });
-          set({ token, user: JSON.parse(userData), isLoading: false });
-        } catch (e) {
-          await SecureStore.deleteItemAsync('userToken');
-          await SecureStore.deleteItemAsync('userData');
-          set({ token: null, user: null, isLoading: false });
+          set({ token, user: storedUser, isLoading: false });
+        } catch (error) {
+          const status = axios.isAxiosError(error) ? error.response?.status : undefined;
+
+          if (status === 401 || status === 403) {
+            await SecureStore.deleteItemAsync('userToken');
+            await SecureStore.deleteItemAsync('userData');
+            set({ token: null, user: null, isLoading: false });
+          } else {
+            set({ token, user: storedUser, isLoading: false });
+          }
         }
       } else {
         set({ isLoading: false });

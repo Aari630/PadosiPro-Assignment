@@ -53,10 +53,6 @@ export default function TaskSelectionScreen({ navigation }: Props) {
   };
 
   const handleConfirm = async () => {
-    if (selectedIds.size === 0) {
-      Alert.alert('Selection Required', 'Please select at least one task.');
-      return;
-    }
     setSaving(true);
     try {
       await apiClient.post('/tasks/select', { taskIds: Array.from(selectedIds) });

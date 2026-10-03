@@ -28,6 +28,12 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     const codeHash = hashOtp(plainOtp);
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
+    // Invalidate all previous un-used OTPs for this user
+    await prisma.emailOtp.updateMany({
+      where: { userId: user.id, isUsed: false },
+      data: { isUsed: true },
+    });   
+
     await prisma.emailOtp.create({
       data: {
         userId: user.id,
@@ -40,7 +46,6 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     try {
       await sendOtpEmail(email, plainOtp);
     } catch (emailError) {
-      // Rollback database if email fails
       await prisma.emailOtp.deleteMany({ where: { userId: user.id } });
       if (!existingUser) {
         await prisma.user.delete({ where: { id: user.id } });
@@ -106,16 +111,28 @@ export const verifyOtp = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    await prisma.$transaction([
-      prisma.emailOtp.update({
-        where: { id: latestOtp.id },
+    const verificationSucceeded = await prisma.$transaction(async (transaction) => {
+      const markedOtp = await transaction.emailOtp.updateMany({
+        where: { id: latestOtp.id, isUsed: false },
         data: { isUsed: true },
-      }),
-      prisma.user.update({
+      });
+
+      if (markedOtp.count !== 1) {
+        return false;
+      }
+
+      await transaction.user.update({
         where: { id: user.id },
         data: { isVerified: true },
-      }),
-    ]);
+      });
+
+      return true;
+    });
+
+    if (!verificationSucceeded) {
+      res.status(400).json({ success: false, message: 'OTP has already been used. Please request a new code.' });
+      return;
+    }
 
     if (!process.env.JWT_SECRET) throw new Error("FATAL: JWT_SECRET is not defined.");
 
@@ -172,19 +189,37 @@ export const resendOtp = async (req: Request, res: Response): Promise<void> => {
     const codeHash = hashOtp(plainOtp);
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-    const newOtp = await prisma.emailOtp.create({
-      data: {
-        userId: user.id,
-        codeHash,
-        expiresAt,
-        attemptCount: 0,
-      },
+    const previousActiveOtps = await prisma.emailOtp.findMany({
+      where: { userId: user.id, isUsed: false },
+      select: { id: true },
+    });
+
+    const newOtp = await prisma.$transaction(async (transaction) => {
+      await transaction.emailOtp.updateMany({
+        where: { userId: user.id, isUsed: false },
+        data: { isUsed: true },
+      });
+
+      return transaction.emailOtp.create({
+        data: {
+          userId: user.id,
+          codeHash,
+          expiresAt,
+          attemptCount: 0,
+        },
+      });
     });
 
     try {
       await sendOtpEmail(email, plainOtp);
     } catch (emailError) {
-      await prisma.emailOtp.delete({ where: { id: newOtp.id } });
+      await prisma.$transaction([
+        prisma.emailOtp.delete({ where: { id: newOtp.id } }),
+        prisma.emailOtp.updateMany({
+          where: { id: { in: previousActiveOtps.map((otpRecord) => otpRecord.id) } },
+          data: { isUsed: false },
+        }),
+      ]);
       res.status(500).json({ success: false, message: 'Failed to send verification email. Please try again.' });
       return;
     }

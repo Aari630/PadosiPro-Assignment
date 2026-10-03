@@ -30,7 +30,18 @@ export const authenticateToken = (
       res.status(403).json({ success: false, message: 'Invalid or expired token' });
       return;
     }
-    req.user = decoded as { userId: string; email: string };
+
+    if (
+      typeof decoded !== 'object' ||
+      decoded === null ||
+      typeof decoded.userId !== 'string' ||
+      typeof decoded.email !== 'string'
+    ) {
+      res.status(403).json({ success: false, message: 'Invalid token payload' });
+      return;
+    }
+
+    req.user = { userId: decoded.userId, email: decoded.email };
     next();
   });
 };

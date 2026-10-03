@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityInd
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { apiClient } from '../api/client';
-import { Mail, Lock } from 'lucide-react-native';
+import { Mail, Lock, Eye, EyeOff } from 'lucide-react-native';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Register'>;
 
@@ -11,6 +11,8 @@ export default function RegisterScreen({ navigation }: Props) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleRegister = async () => {
@@ -46,12 +48,40 @@ export default function RegisterScreen({ navigation }: Props) {
 
       <View style={styles.inputContainer}>
         <Lock color="#666" size={20} style={styles.icon} />
-        <TextInput style={styles.input} placeholder="Password" secureTextEntry value={password} onChangeText={setPassword} />
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          secureTextEntry={!showPassword}
+          value={password}
+          onChangeText={setPassword}
+        />
+        <TouchableOpacity
+          style={styles.visibilityButton}
+          onPress={() => setShowPassword((visible) => !visible)}
+          accessibilityRole="button"
+          accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+        >
+          {showPassword ? <EyeOff color="#666" size={20} /> : <Eye color="#666" size={20} />}
+        </TouchableOpacity>
       </View>
 
       <View style={styles.inputContainer}>
         <Lock color="#666" size={20} style={styles.icon} />
-        <TextInput style={styles.input} placeholder="Confirm Password" secureTextEntry value={confirmPassword} onChangeText={setConfirmPassword} />
+        <TextInput
+          style={styles.input}
+          placeholder="Confirm Password"
+          secureTextEntry={!showConfirmPassword}
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+        />
+        <TouchableOpacity
+          style={styles.visibilityButton}
+          onPress={() => setShowConfirmPassword((visible) => !visible)}
+          accessibilityRole="button"
+          accessibilityLabel={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+        >
+          {showConfirmPassword ? <EyeOff color="#666" size={20} /> : <Eye color="#666" size={20} />}
+        </TouchableOpacity>
       </View>
 
       <TouchableOpacity style={styles.button} onPress={handleRegister} disabled={loading}>
@@ -72,6 +102,7 @@ const styles = StyleSheet.create({
   inputContainer: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#ddd', borderRadius: 12, marginBottom: 16, paddingHorizontal: 12, height: 56, backgroundColor: '#f9f9f9' },
   icon: { marginRight: 12 },
   input: { flex: 1, fontSize: 16, color: '#333' },
+  visibilityButton: { padding: 4 },
   button: { backgroundColor: '#1E40AF', height: 56, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginTop: 16 },
   buttonText: { color: '#fff', fontSize: 18, fontWeight: '600' },
   linkButton: { marginTop: 24, alignItems: 'center' },

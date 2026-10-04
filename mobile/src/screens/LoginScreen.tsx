@@ -29,7 +29,13 @@ export default function LoginScreen({ navigation }: Props) {
         Alert.alert('Verification Required', 'Please verify your email to continue.');
         navigation.navigate('OTP', { email });
       } else {
-        Alert.alert('Login Failed', error.response?.data?.message || 'Something went wrong');
+        const status = error.response?.status;
+        const message = error.response?.data?.message || (
+          status
+            ? `Server returned status ${status}.`
+            : `Cannot reach the backend at ${apiClient.defaults.baseURL}. Check that your phone and computer are on the same Wi-Fi.`
+        );
+        Alert.alert('Login Failed', message);
       }
     } finally {
       setLoading(false);
@@ -46,6 +52,7 @@ export default function LoginScreen({ navigation }: Props) {
         <TextInput
           style={styles.input}
           placeholder="Email address"
+          placeholderTextColor="#777"
           keyboardType="email-address"
           autoCapitalize="none"
           value={email}
@@ -58,6 +65,7 @@ export default function LoginScreen({ navigation }: Props) {
         <TextInput
           style={styles.input}
           placeholder="Password"
+          placeholderTextColor="#777"
           secureTextEntry={!showPassword}
           value={password}
           onChangeText={setPassword}

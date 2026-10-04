@@ -11,7 +11,7 @@ const BASE_URL = configuredApiUrl || (
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,
-  timeout: 10000,
+  timeout: 60000,
 });
 
 apiClient.interceptors.request.use(async (config) => {

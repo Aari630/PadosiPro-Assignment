@@ -30,7 +30,13 @@ export default function RegisterScreen({ navigation }: Props) {
       await apiClient.post('/auth/register', { email, password });
       navigation.replace('OTP', { email });
     } catch (error: any) {
-      Alert.alert('Registration Failed', error.response?.data?.message || 'Something went wrong');
+      const status = error.response?.status;
+      const message = error.response?.data?.message || (
+        status
+          ? `Server returned status ${status}.`
+          : `Cannot reach the backend at ${apiClient.defaults.baseURL}. Check that your phone and computer are on the same Wi-Fi.`
+      );
+      Alert.alert('Registration Failed', message);
     } finally {
       setLoading(false);
     }
@@ -43,7 +49,7 @@ export default function RegisterScreen({ navigation }: Props) {
 
       <View style={styles.inputContainer}>
         <Mail color="#666" size={20} style={styles.icon} />
-        <TextInput style={styles.input} placeholder="Email address" keyboardType="email-address" autoCapitalize="none" value={email} onChangeText={setEmail} />
+        <TextInput style={styles.input} placeholder="Email address" placeholderTextColor="#777" keyboardType="email-address" autoCapitalize="none" value={email} onChangeText={setEmail} />
       </View>
 
       <View style={styles.inputContainer}>
@@ -51,6 +57,7 @@ export default function RegisterScreen({ navigation }: Props) {
         <TextInput
           style={styles.input}
           placeholder="Password"
+          placeholderTextColor="#777"
           secureTextEntry={!showPassword}
           value={password}
           onChangeText={setPassword}
@@ -70,6 +77,7 @@ export default function RegisterScreen({ navigation }: Props) {
         <TextInput
           style={styles.input}
           placeholder="Confirm Password"
+          placeholderTextColor="#777"
           secureTextEntry={!showConfirmPassword}
           value={confirmPassword}
           onChangeText={setConfirmPassword}

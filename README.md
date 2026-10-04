@@ -5,7 +5,7 @@ A full-stack mobile application featuring secure OTP authentication, profile man
 ## Architecture
 - **Mobile:** React Native (Expo), Zustand (State Management), Axios, Expo Secure Store
 - **Backend:** Node.js, Express, TypeScript, Zod (Validation), Jest (Testing)
-- **Database:** SQLite via Prisma ORM (chosen for zero-dependency local execution)
+- **Database:** PostgreSQL via Prisma ORM
 - **Email:** Mailpit for local SMTP testing
 
 ## Setup Instructions
@@ -41,6 +41,8 @@ npm run dev
 ```
 
 The backend runs at http://localhost:4000.
+
+The local `DATABASE_URL` must point to a running PostgreSQL database. Render provides this database automatically when the root `render.yaml` Blueprint is deployed.
 
 ### 4. Mobile Setup
 Open a new terminal:

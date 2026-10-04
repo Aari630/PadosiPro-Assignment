@@ -3,8 +3,8 @@ dotenv.config();
 
 import app from './app';
 
-const PORT = process.env.PORT || 4000;
+const PORT = Number(process.env.PORT) || 4000;
 
-app.listen(PORT, () => {
-  console.log(`PadosiPro Backend running on http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`PadosiPro Backend running on http://0.0.0.0:${PORT}`);
 });

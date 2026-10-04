@@ -20,3 +20,12 @@ Thumbs.db
 
 # Expo / React Native (for later)
 .expo/
+
+.kilo/
+*.db
+tree.txt
+
+backend/prisma/seed.js
+mobile/.claude/
+mobile/AGENTS.md
+mobile/CLAUDE.md

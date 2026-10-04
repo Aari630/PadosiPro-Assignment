@@ -24,15 +24,23 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const passwordHash = await hashPassword(password);
-    const user = existingUser
-      ? await prisma.user.update({
-          where: { email },
-          data: { passwordHash },
-        })
-      : await prisma.user.create({
-          data: { email, passwordHash },
-        });
+        if (existingUser) {
+      // Never overwrite an unverified account's password (prevents takeover via re-register)
+      const last = await prisma.emailOtp.findFirst({
+        where: { userId: existingUser.id },
+        orderBy: { createdAt: 'desc' },
+      });
+      if (last && Date.now() - new Date(last.lastSentAt).getTime() < 30_000) {
+        res.status(429).json({ success: false, message: 'Please wait before requesting a new code.' });
+        return;
+      }
+    }
+
+    const user =
+      existingUser ??
+      (await prisma.user.create({
+        data: { email, passwordHash: await hashPassword(password) },
+      }));
 
     const plainOtp = generateOtp();
     const codeHash = hashOtp(plainOtp);

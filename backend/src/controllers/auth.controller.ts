@@ -4,6 +4,16 @@ import { prisma } from '../config/db';
 import { hashPassword, verifyPassword, generateOtp, hashOtp } from '../utils/crypto';
 import { sendOtpEmail } from '../config/mailer';
 
+// Non-blocking OTP delivery. Render's free tier blocks outbound SMTP, so a failed
+// send must not fail the request. The OTP is logged as a temporary fallback.
+const deliverOtp = (email: string, otp: string): void => {
+  sendOtpEmail(email, otp).catch((err: unknown) => {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('Email failed:', message);
+    console.log(`OTP for ${email}: ${otp}`);
+  });
+};
+
 export const register = async (req: Request, res: Response): Promise<void> => {
   const { email, password } = req.body;
 
@@ -32,7 +42,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     await prisma.emailOtp.updateMany({
       where: { userId: user.id, isUsed: false },
       data: { isUsed: true },
-    });   
+    });
 
     await prisma.emailOtp.create({
       data: {
@@ -43,16 +53,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       },
     });
 
-    try {
-      await sendOtpEmail(email, plainOtp);
-    } catch (emailError) {
-      await prisma.emailOtp.deleteMany({ where: { userId: user.id } });
-      if (!existingUser) {
-        await prisma.user.delete({ where: { id: user.id } });
-      }
-      res.status(500).json({ success: false, message: 'Failed to send verification email. Please try again.' });
-      return;
-    }
+    deliverOtp(email, plainOtp);
 
     res.status(201).json({
       success: true,
@@ -68,10 +69,10 @@ export const verifyOtp = async (req: Request, res: Response): Promise<void> => {
   const { email, otp } = req.body;
 
   try {
-    const user = await prisma.user.findUnique({ 
-        where: { email },
-        include: { profile: true } 
-      });
+    const user = await prisma.user.findUnique({
+      where: { email },
+      include: { profile: true },
+    });
     if (!user) {
       res.status(404).json({ success: false, message: 'User not found' });
       return;
@@ -146,10 +147,10 @@ export const verifyOtp = async (req: Request, res: Response): Promise<void> => {
       success: true,
       message: 'Email verified successfully',
       token,
-      user: { 
-        id: user.id, 
+      user: {
+        id: user.id,
         email: user.email,
-        hasProfile: Boolean(user.profile) 
+        hasProfile: Boolean(user.profile),
       },
     });
   } catch (error) {
@@ -189,12 +190,7 @@ export const resendOtp = async (req: Request, res: Response): Promise<void> => {
     const codeHash = hashOtp(plainOtp);
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-    const previousActiveOtps = await prisma.emailOtp.findMany({
-      where: { userId: user.id, isUsed: false },
-      select: { id: true },
-    });
-
-    const newOtp = await prisma.$transaction(async (transaction) => {
+    await prisma.$transaction(async (transaction) => {
       await transaction.emailOtp.updateMany({
         where: { userId: user.id, isUsed: false },
         data: { isUsed: true },
@@ -210,19 +206,7 @@ export const resendOtp = async (req: Request, res: Response): Promise<void> => {
       });
     });
 
-    try {
-      await sendOtpEmail(email, plainOtp);
-    } catch (emailError) {
-      await prisma.$transaction([
-        prisma.emailOtp.delete({ where: { id: newOtp.id } }),
-        prisma.emailOtp.updateMany({
-          where: { id: { in: previousActiveOtps.map((otpRecord) => otpRecord.id) } },
-          data: { isUsed: false },
-        }),
-      ]);
-      res.status(500).json({ success: false, message: 'Failed to send verification email. Please try again.' });
-      return;
-    }
+    deliverOtp(email, plainOtp);
 
     res.status(200).json({ success: true, message: 'New verification code sent' });
   } catch (error) {

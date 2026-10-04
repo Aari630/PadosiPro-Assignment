@@ -11,6 +11,17 @@
         "EXPO_PUBLIC_API_URL": "https://padosipro-backend-8262.onrender.com/api"
       }
     },
-    "production": {}
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://padosipro-backend-8262.onrender.com/api"
+      }
+    },
+    "production": {
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://padosipro-backend-8262.onrender.com/api"
+      }
+    }
   }
 }

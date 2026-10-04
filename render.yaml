@@ -2,6 +2,7 @@ services:
   - type: web
     name: padosipro-backend
     runtime: node
+    plan: free
     rootDir: backend
     buildCommand: npm ci && npx prisma generate && npm run build
     startCommand: npx prisma migrate deploy && npm run db:seed && npm start
@@ -32,4 +33,4 @@ databases:
   - name: padosipro-db
     databaseName: padosipro
     user: padosipro
-    plan: basic-256mb
+    plan: free

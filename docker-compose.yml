@@ -1,10 +1,50 @@
-version: '3.8'
 services:
+  db:
+    image: postgres:16-alpine
+    container_name: padosipro_db
+    environment:
+      POSTGRES_USER: padosipro
+      POSTGRES_PASSWORD: padosipro
+      POSTGRES_DB: padosipro
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U padosipro -d padosipro"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   mailpit:
     image: axllent/mailpit
     container_name: padosipro_mailpit
     ports:
-      - "8025:8025" # Web UI
-      - "1025:1025" # SMTP server
+      - "8025:8025" # Web UI: read OTP emails here
+      - "1025:1025" # SMTP
     environment:
       MP_MAX_MESSAGES: 500
+
+  backend:
+    build: ./backend
+    container_name: padosipro_backend
+    depends_on:
+      db:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://padosipro:padosipro@db:5432/padosipro
+      JWT_SECRET: dev-only-secret-change-me
+      JWT_EXPIRES_IN: 7d
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+      SMTP_USER: ""
+      SMTP_PASS: ""
+      EMAIL_FROM: "PadosiPro <no-reply@padosipro.local>"
+    ports:
+      - "4000:4000"
+
+volumes:
+  pgdata:

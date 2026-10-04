@@ -1,6 +1,8 @@
 # Design Decisions & Trade-offs
 
-1. **SQLite Pivot:** Transitioned from Docker/PostgreSQL to SQLite to guarantee a friction-free reviewer experience. The app runs immediately upon `npm run dev` with zero container overhead.
-2. **Atomic Registration:** Implemented Prisma `$transaction` blocks and rollback logic during registration. If an OTP email fails to send, the database immediately purges the orphaned user to prevent locked-out states.
-3. **JWT Security:** Strict typing and hardcoded fallback removal ensure the app fails securely if environment variables are missing.
-4. **Offline Task Filtering:** Mobile task catalog search is handled locally to prevent unnecessary backend bandwidth usage.
+1. **PostgreSQL on Render:** Started on SQLite for a friction-free local run, then moved to PostgreSQL via Prisma so the app can be deployed on Render with a managed database. Migrations run with `prisma migrate deploy` on start, and the seed script is idempotent so redeploys do not duplicate data.
+2. **Non-blocking OTP delivery:** Render's free tier blocks outbound SMTP, so awaiting the email made registration hang and time out. The user and OTP are now saved first, and the email is sent without blocking the response. If delivery fails, the error is logged along with the OTP so the flow can still be completed from the server logs. This is a deliberate demo-only fallback. For production, send mail through an HTTP email API (for example Resend or Brevo) and remove the OTP log line.
+3. **OTP security:** OTPs are stored as hashes, expire after 10 minutes, allow 5 attempts, and are single-use (marked used inside a transaction). Resend has a 30-second cooldown and invalidates earlier codes.
+4. **JWT Security:** No hardcoded fallback secret. The app fails securely if `JWT_SECRET` is missing, and Render generates a unique secret per deployment.
+5. **Cold starts:** The free web service sleeps after 15 minutes idle. The mobile API timeout is 60 seconds, and an uptime monitor pings `/health` to keep the service awake.
+6. **Offline Task Filtering:** Mobile task catalog search is handled locally to prevent unnecessary backend bandwidth usage.
